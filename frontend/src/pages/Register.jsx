@@ -2,8 +2,12 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Logo from "../assets/logo.svg";
 import { toast, ToastContainer } from "react-toastify";
-import { Link } from "react-router-dom";
+import axios from "axios";
+import "react-toastify/dist/ReactToastify.css";
+import { Link, useNavigate } from "react-router-dom";
+import { registerRoute } from "../utils/APIRoutes";
 const Register = () => {
+  const navigate = useNavigate();
   const [values, setValues] = useState({
     username: "",
     email: "",
@@ -13,9 +17,46 @@ const Register = () => {
   const handleChange = (event) => {
     setValues({ ...values, [event.target.name]: event.target.value });
   };
-
-  const handleSubmit = (e) => {
+  const toastOptions = {
+    position: "top-right",
+    autoClose: 8000,
+    theme: "dark",
+    pauseOnHover: true,
+    draggable: true,
+  };
+  const handleValidation = () => {
+    const { password, confirmPassword, username, email } = values;
+    if (password !== confirmPassword) {
+      toast.error("passwords do not match", toastOptions);
+      return false;
+    } else if (username.length < 3) {
+      toast.error("username should be greater than 3 characters", toastOptions);
+      return false;
+    } else if (password.length < 8) {
+      toast.error("password should be greater than 8 characters", toastOptions);
+      return false;
+    } else if (email === "") {
+      toast.error("email is required", toastOptions);
+      return false;
+    }
+    return true;
+  };
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (handleValidation()) {
+      const { username, password, email } = values;
+
+      const { data } = await axios.post(registerRoute, {
+        username,
+        email,
+        password,
+      });
+      if (data.success === false) {
+        toast.error(data.msg, toastOptions);
+      }
+      localStorage.setItem("chat-app-user", JSON.stringify(data.user));
+      navigate("/");
+    }
   };
   return (
     <>
@@ -51,7 +92,7 @@ const Register = () => {
           />
           <button type="submit">Create User</button>
           <span>
-            Already have an account ? <Link to="/login">Login.</Link>
+            Already have an account ? <Link to="/login">Login</Link>
           </span>
         </form>
       </FormContainer>
