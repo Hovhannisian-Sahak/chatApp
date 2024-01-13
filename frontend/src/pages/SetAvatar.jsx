@@ -60,7 +60,7 @@ const SetAvatar = () => {
       setIsLoading(false);
     };
     getData();
-  });
+  }, []);
   return (
     <>
       {isLoading ? (
