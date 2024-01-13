@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import Logo from "../assets/logo.svg";
+import Logo from "../assets/react.svg";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,6 +24,7 @@ const Register = () => {
     pauseOnHover: true,
     draggable: true,
   };
+
   const handleValidation = () => {
     const { password, confirmPassword, username, email } = values;
     if (password !== confirmPassword) {
@@ -55,7 +56,7 @@ const Register = () => {
         toast.error(data.msg, toastOptions);
       }
       localStorage.setItem("chat-app-user", JSON.stringify(data.user));
-      navigate("/");
+      navigate("/login");
     }
   };
   return (

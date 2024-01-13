@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import Logo from "../assets/logo.svg";
+import Logo from "../assets/react.svg";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
@@ -26,7 +26,7 @@ const Login = () => {
     if (localStorage.getItem("chat-app-user")) {
       navigate("/");
     }
-  });
+  }, []);
   const handleValidation = () => {
     const { password, username } = values;
     if (password === "") {
@@ -39,19 +39,23 @@ const Login = () => {
     return true;
   };
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (handleValidation()) {
-      const { username, password } = values;
+    try {
+      e.preventDefault();
+      if (handleValidation()) {
+        const { username, password } = values;
 
-      const { data } = await axios.post(loginRoute, {
-        username,
-        password,
-      });
-      if (data.success === false) {
-        toast.error(data.msg, toastOptions);
+        const { data } = await axios.post(loginRoute, {
+          username,
+          password,
+        });
+        if (data.success === false) {
+          toast.error(data.msg, toastOptions);
+        }
+        localStorage.setItem("chat-app-user", JSON.stringify(data.user));
+        navigate("/");
       }
-      localStorage.setItem("chat-app-user", JSON.stringify(data.user));
-      navigate("/");
+    } catch (error) {
+      throw error;
     }
   };
   return (
