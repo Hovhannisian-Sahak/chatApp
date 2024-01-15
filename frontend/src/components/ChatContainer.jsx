@@ -1,34 +1,83 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import styled from "styled-components";
 import Logout from "./Logout";
 import ChatInput from "./ChatInput";
 import Messages from "./Messages";
 import { getAllMessagesRoute, sendMessageRoute } from "../utils/APIRoutes";
-const ChatContainer = ({ currentChat, currentUser }) => {
+import { v4 as uuidv4 } from "uuid";
+const ChatContainer = ({ currentChat, currentUser, socket }) => {
   const [messages, setMessages] = useState([]);
-  const handleSendMsg = async (msg) => {
-    await axios.post(sendMessageRoute, {
-      from: currentUser && currentUser._id,
-      to: currentChat && currentChat._id,
-      message: msg,
-    });
-  };
+  const [arrivalMessage, setArrivalMessage] = useState(null);
+  const scrollRef = useRef();
   useEffect(() => {
     const fetchCurrentChat = async () => {
       try {
-        const response = await axios.post(getAllMessagesRoute, {
-          from: currentUser && currentUser._id,
-          to: currentChat && currentChat._id,
-        });
-        console.log(response);
-        setMessages(response.data);
+        if (currentChat) {
+          const response = await axios.post(getAllMessagesRoute, {
+            from: currentUser && currentUser._id,
+            to: currentChat && currentChat._id,
+          });
+          console.log(response);
+          setMessages(response.data);
+        }
       } catch (error) {
         throw error;
       }
     };
     fetchCurrentChat();
+  }, [currentChat]);
+  useEffect(() => {
+    const getCurrentChat = async () => {
+      if (currentChat) {
+        await JSON.parse(localStorage.getItem("chat-app-user"))._id;
+      }
+    };
+    getCurrentChat();
+  }, [currentChat]);
+
+  const handleSendMsg = async (msg) => {
+    const data = await JSON.parse(localStorage.getItem("chat-app-user"));
+    socket.current.emit("send-msg", {
+      to: currentChat._id,
+      from: data._id,
+      msg,
+    });
+    await axios.post(sendMessageRoute, {
+      from: data._id,
+      to: currentChat._id,
+      message: msg,
+    });
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { fromSelf: true, message: msg },
+    ]);
+    console.log(messages);
+  };
+  console.log(messages);
+  useEffect(() => {
+    if (socket.current) {
+      socket.current.on("connect", () => {
+        console.log("Socket.IO connected");
+      });
+
+      socket.current.on("msg-recieve", (msg) => {
+        console.log("Received msg-recieve event", msg);
+        setArrivalMessage({ fromSelf: false, message: msg });
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
+  }, [arrivalMessage]);
+  console.log(arrivalMessage);
+  console.log(messages);
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behaviour: "smooth" });
+  }, [messages]);
+
   return (
     currentChat && (
       <Container>
@@ -36,27 +85,28 @@ const ChatContainer = ({ currentChat, currentUser }) => {
           <div className="user-details">
             <div className="avatar">
               <img
-                src={`data:image/svg+xml;base64,${currentChat.avatarImage}`}
+                src={`data:image/svg+xml;base64,${currentChat?.avatarImage}`}
                 alt=""
               />
             </div>
             <div className="username">
-              <h3>{currentChat.username}</h3>
+              <h3>{currentChat?.username}</h3>
             </div>
           </div>
           <Logout />
         </div>
         <div className="chat-messages">
           {messages.map((message) => {
+            console.log(message);
             return (
-              <div key={message._id}>
+              <div ref={scrollRef} key={uuidv4()}>
                 <div
                   className={`message ${
-                    message.fromSelf ? "sended" : "reveived"
+                    message.fromSelf ? "sended" : "recieved"
                   }`}
                 >
                   <div className="content">
-                    <p>{message.message}</p>
+                    <p>{message?.message}</p>
                   </div>
                 </div>
               </div>
